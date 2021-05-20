@@ -52,4 +52,7 @@ ${TFSEC_OUTPUT}
   echo "${PAYLOAD}" | curl -s -S -H "Authorization: token ${GITHUB_TOKEN}" --header "Content-Type: application/json" --data @- "${URL}" > /dev/null
 fi
 
+echo "Running Checkov"
+checkov -d TFSEC_WORKING_DIR
+
 exit $TFSEC_EXITCODE
