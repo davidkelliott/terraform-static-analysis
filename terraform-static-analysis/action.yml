@@ -1,0 +1,38 @@
+# action.yml
+name: 'Terraform security scan'
+description: 'Scan your terraform code with tfsec'
+inputs:
+  recursive:
+    description: 'Run the scans on subfolders'
+    required: false
+    default: true
+  only_on_changed_directories:
+    description: 'Run only on directories with changes'
+    required: false
+    default: true
+  tfsec_actions_comment:
+    description: 'Whether or not to comment on pull requests.'
+    required: false
+    default: true
+  terraform_working_dir:
+    description: 'Terraform working directory.'
+    required: false
+    default: '.'
+  tfsec_exclude:
+    description: 'Provide checks via , without space to exclude from run'
+    required: false
+  tfsec_version:
+    description: 'Specify the version of tfsec to install'
+    required: false
+  tfsec_output_format:
+    description: 'The output format: default, json, csv, checkstyle, junit, sarif (check `tfsec` for an extensive list)'
+    required: false
+  tfsec_output_file:
+    description: 'The name of the output file'
+    required: false
+runs:
+  using: 'docker'
+  image: './Dockerfile'
+branding:
+  icon: 'shield'
+  color: 'gray-dark'

@@ -1,15 +1,3 @@
-# Ministry of Justice Template Repository
+# Terraform Static Analysis
 
-Use this template to [create a repository] with the default initial files for a Ministry of Justice Github repository, including:
-
-* The correct LICENSE
-* Github actions
-* .gitignore file
-
-Once you have created your repository, please:
-
-* Edit the copy of this README.md file to document your project
-* Grant permissions to the appropriate MoJ teams
-* Setup branch protection
-
-[create a repository]: https://github.com/ministryofjustice/template-repository/generate
+Action using [TFSEC](https://github.com/tfsec/tfsec) and [checkov](https://github.com/bridgecrewio/checkov) static code analysis tools to run both scans on Terraform with complex subfolder directory system.
