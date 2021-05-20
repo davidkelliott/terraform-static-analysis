@@ -53,6 +53,6 @@ ${TFSEC_OUTPUT}
 fi
 
 echo "Running Checkov"
-checkov -d TFSEC_WORKING_DIR
+checkov -d $TFSEC_WORKING_DIR
 
 exit $TFSEC_EXITCODE
