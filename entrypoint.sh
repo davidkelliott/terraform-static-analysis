@@ -58,6 +58,7 @@ ${TFSEC_OUTPUT}
 \`\`\`
 
 </details>
+
 #### \`Checkov Scan\` ${CHECKOV_STATUS}
 <details><summary>Show Output</summary>
 
@@ -71,7 +72,7 @@ ${CHECKOV_OUTPUT}
   echo "${PAYLOAD}" | curl -s -S -H "Authorization: token ${GITHUB_TOKEN}" --header "Content-Type: application/json" --data @- "${URL}" > /dev/null
 fi
 
-if [ "${TFSEC_EXITCODE}" != "0" ] || [  "${CHECKOV_EXITCODE}" != "0" ]
+if [ "${TFSEC_EXITCODE}" != "0" ] || [  "${CHECKOV_EXITCODE}" != "0" ];then
   exit 1
 else
   exit 0
