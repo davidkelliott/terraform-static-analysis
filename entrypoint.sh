@@ -14,6 +14,13 @@ else
   env GO111MODULE=on go get -u github.com/tfsec/tfsec/cmd/tfsec
 fi
 
+TF_DIRECTORIES_WITH_CHANGES=$(git diff --no-commit-id --name-only -r @^ | awk '{print $1}' | grep '.tf' | sed 's#/[^/]*$##' | uniq)
+
+for directory in $TF_DIRECTORIES_WITH_CHANGES
+do
+    echo $directory
+done
+
 if [[ -n "$INPUT_TFSEC_EXCLUDE" ]]; then
   TFSEC_OUTPUT=$(/go/bin/tfsec ${TERRAFORM_WORKING_DIR} --no-colour -e "${INPUT_TFSEC_EXCLUDE}" ${INPUT_TFSEC_OUTPUT_FORMAT:+ -f "$INPUT_TFSEC_OUTPUT_FORMAT"} ${INPUT_TFSEC_OUTPUT_FILE:+ --out "$INPUT_TFSEC_OUTPUT_FILE"})
 else
@@ -21,16 +28,16 @@ else
 fi
 TFSEC_EXITCODE=${?}
 
+echo "Running Checkov"
+CHECKOV_OUTPUT=$(checkov --quiet -d $TERRAFORM_WORKING_DIR)
+CHECKOV_EXITCODE=$?
+
 # Exit code of 0 indicates success.
 if [ ${TFSEC_EXITCODE} -eq 0 ]; then
   TFSEC_STATUS="Success"
 else
   TFSEC_STATUS="Failed"
 fi
-
-echo "Running Checkov"
-CHECKOV_OUTPUT=$(checkov --quiet -d $TERRAFORM_WORKING_DIR)
-CHECKOV_EXITCODE=$?
 
 if [ ${CHECKOV_EXITCODE} -eq 0 ]; then
   CHECKOV_STATUS="Success"
