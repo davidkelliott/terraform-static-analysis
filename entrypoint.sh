@@ -14,7 +14,8 @@ else
   env GO111MODULE=on go get -u github.com/tfsec/tfsec/cmd/tfsec
 fi
 
-TF_DIRECTORIES_WITH_CHANGES=$(git diff --no-commit-id --name-only -r @^ | awk '{print $1}' | grep '.tf' | sed 's#/[^/]*$##' | uniq)
+TF_DIRECTORIES_WITH_CHANGES=`git diff --no-commit-id --name-only -r @^ | awk '{print $1}' | grep '.tf' | sed 's#/[^/]*$##' | uniq`
+echo $TF_DIRECTORIES_WITH_CHANGES
 
 for directory in $TF_DIRECTORIES_WITH_CHANGES
 do
