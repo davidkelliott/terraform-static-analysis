@@ -24,7 +24,7 @@ echo $all_tf_folders
 run_tfsec(){
   echo "TFSEC will check the following folders:"
   echo $1
-  for directory in "${1[@]}"
+  for directory in ${1[@]}
   do
     echo "Running TFSEC in ${directory}"
     terraform_working_dir="/github/workspace/${directory}"
@@ -41,7 +41,7 @@ run_tfsec(){
 run_checkov(){
   echo "TFSEC will check the following folders:"
   echo $1
-  for directory in "${1[@]}"
+  for directory in ${1[@]}
   do
     echo "Running Checkov in ${directory}"
     terraform_working_dir="/github/workspace/${directory}"
