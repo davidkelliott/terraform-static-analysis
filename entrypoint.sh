@@ -7,6 +7,12 @@ else
   env GO111MODULE=on go get -u github.com/tfsec/tfsec/cmd/tfsec
 fi
 
+line_break() {
+  echo
+  echo "*****************************"
+  echo
+}
+
 tf_folders_with_changes=`git diff --no-commit-id --name-only -r @^ | awk '{print $1}' | grep '.tf' | sed 's#/[^/]*$##' | uniq`
 echo "TF folders with changes"
 echo $tf_folders_with_changes
@@ -16,7 +22,9 @@ echo "All TF folders"
 echo $all_tf_folders
 
 run_tfsec(){
-  for directory in "${1}"
+  echo "TFSEC will check the following folders:"
+  echo $1
+  for directory in "${1[@]}"
   do
     echo "Running TFSEC in ${directory}"
     terraform_working_dir="/github/workspace/${directory}"
@@ -26,34 +34,41 @@ run_tfsec(){
       /go/bin/tfsec ${terraform_working_dir} --no-colour ${INPUT_TFSEC_OUTPUT_FORMAT:+ -f "$INPUT_TFSEC_OUTPUT_FORMAT"} ${INPUT_TFSEC_OUTPUT_FILE:+ --out "$INPUT_TFSEC_OUTPUT_FILE"}
     fi
     TFSEC_EXITCODE=${?}
+    echo "TFSEC_EXITCODE=${TFSEC_EXITCODE}"
   done
 }
 
 run_checkov(){
-  for directory in "${1}"
+  echo "TFSEC will check the following folders:"
+  echo $1
+  for directory in "${1[@]}"
   do
     echo "Running Checkov in ${directory}"
     terraform_working_dir="/github/workspace/${directory}"
     
     checkov --quiet -d $terraform_working_dir
     CHECKOV_EXITCODE=$?
+    echo "CHECKOV_EXITCODE=${CHECKOV_EXITCODE}"
   done
 }
 
 case ${INPUT_SCAN_TYPE} in
 
   full)
+    line_break
     echo "Starting full scan"
     TFSEC_OUTPUT=$(run_tfsec "${all_tf_folders}")
     CHECKOV_OUTPUT=$(run_checkov "${all_tf_folders}")
     ;;
 
   changed)
+    line_break
     echo "Starting scan of changed folders"
     TFSEC_OUTPUT=$(run_tfsec "${tf_folders_with_changes}")
     CHECKOV_OUTPUT=$(run_checkov "${tf_folders_with_changes}")
     ;;
   *)
+    line_break
     echo "Starting single folder scan"
     TFSEC_OUTPUT=$(run_tfsec "${INPUT_TERRAFORM_WORKING_DIR}")
     CHECKOV_OUTPUT=$(run_checkov "${INPUT_TERRAFORM_WORKING_DIR}")
