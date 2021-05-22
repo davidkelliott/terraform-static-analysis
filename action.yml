@@ -2,12 +2,8 @@
 name: 'Terraform security scan'
 description: 'Scan your terraform code with tfsec'
 inputs:
-  recursive:
-    description: 'Run the scans on subfolders'
-    required: false
-    default: true
-  only_on_changed_directories:
-    description: 'Run only on directories with changes'
+  scan_type:
+    description: 'full = all tf folders, changed = tf changes, single = single folder'
     required: false
     default: true
   tfsec_actions_comment:

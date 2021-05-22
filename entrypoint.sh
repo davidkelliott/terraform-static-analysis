@@ -1,12 +1,5 @@
 #!/bin/bash
 
-# set working directory
-if [ "${INPUT_TERRAFORM_WORKING_DIR}" != "" ] && [ "${INPUT_TERRAFORM_WORKING_DIR}" != "." ]; then
-  TERRAFORM_WORKING_DIR="/github/workspace/${INPUT_TERRAFORM_WORKING_DIR}"
-else
-  TERRAFORM_WORKING_DIR="/github/workspace/"
-fi
-
 # grab tfsec from GitHub (taken from README.md)
 if [[ -n "$INPUT_TFSEC_VERSION" ]]; then
   env GO111MODULE=on go install github.com/tfsec/tfsec/cmd/tfsec@"${INPUT_TFSEC_VERSION}"
@@ -14,24 +7,68 @@ else
   env GO111MODULE=on go get -u github.com/tfsec/tfsec/cmd/tfsec
 fi
 
-TF_DIRECTORIES_WITH_CHANGES=`git diff --no-commit-id --name-only -r @^ | awk '{print $1}' | grep '.tf' | sed 's#/[^/]*$##' | uniq`
-echo $TF_DIRECTORIES_WITH_CHANGES
+tf_folders_with_changes=`git diff --no-commit-id --name-only -r @^ | awk '{print $1}' | grep '.tf' | sed 's#/[^/]*$##' | uniq`
+echo "TF folders with changes"
+echo $tf_folders_with_changes
 
-for directory in $TF_DIRECTORIES_WITH_CHANGES
-do
-    echo $directory
-done
+all_tf_folders=`find . -type f -name '*.tf' | sed 's#/[^/]*$##' | sed 's/.\///'| sort | uniq`
+echo "All TF folders"
+echo $all_tf_folders
 
-if [[ -n "$INPUT_TFSEC_EXCLUDE" ]]; then
-  TFSEC_OUTPUT=$(/go/bin/tfsec ${TERRAFORM_WORKING_DIR} --no-colour -e "${INPUT_TFSEC_EXCLUDE}" ${INPUT_TFSEC_OUTPUT_FORMAT:+ -f "$INPUT_TFSEC_OUTPUT_FORMAT"} ${INPUT_TFSEC_OUTPUT_FILE:+ --out "$INPUT_TFSEC_OUTPUT_FILE"})
-else
-  TFSEC_OUTPUT=$(/go/bin/tfsec ${TERRAFORM_WORKING_DIR} --no-colour ${INPUT_TFSEC_OUTPUT_FORMAT:+ -f "$INPUT_TFSEC_OUTPUT_FORMAT"} ${INPUT_TFSEC_OUTPUT_FILE:+ --out "$INPUT_TFSEC_OUTPUT_FILE"})
-fi
-TFSEC_EXITCODE=${?}
+run_tfsec(){
+  for directory in $1
+  do
+    echo "Running TFSEC in ${directory}"
+    terraform_working_dir="/github/workspace/${directory}"
+    if [[ -n "$INPUT_TFSEC_EXCLUDE" ]]; then
+      /go/bin/tfsec ${terraform_working_dir} --no-colour -e "${INPUT_TFSEC_EXCLUDE}" ${INPUT_TFSEC_OUTPUT_FORMAT:+ -f "$INPUT_TFSEC_OUTPUT_FORMAT"} ${INPUT_TFSEC_OUTPUT_FILE:+ --out "$INPUT_TFSEC_OUTPUT_FILE"}
+    else
+      /go/bin/tfsec ${terraform_working_dir} --no-colour ${INPUT_TFSEC_OUTPUT_FORMAT:+ -f "$INPUT_TFSEC_OUTPUT_FORMAT"} ${INPUT_TFSEC_OUTPUT_FILE:+ --out "$INPUT_TFSEC_OUTPUT_FILE"}
+    fi
+    TFSEC_EXITCODE=${?}
+  done
+}
 
-echo "Running Checkov"
-CHECKOV_OUTPUT=$(checkov --quiet -d $TERRAFORM_WORKING_DIR)
-CHECKOV_EXITCODE=$?
+run_checkov(){
+  for directory in $1
+  do
+    echo "Running Checkov in ${directory}"
+    terraform_working_dir="/github/workspace/${directory}"
+    
+    CHECKOV_OUTPUT=$(checkov --quiet -d $terraform_working_dir)
+    CHECKOV_EXITCODE=$?
+  done
+}
+
+case ${INPUT_SCAN_TYPE} in
+
+  full)
+    TFSEC_OUTPUT=$(run_tfsec ${all_tf_folders})
+    CHECKOV_OUTPUT=$(run_checkov ${all_tf_folders})
+    ;;
+
+  changed)
+    TFSEC_OUTPUT=$(run_tfsec ${tf_folders_with_changes})
+    CHECKOV_OUTPUT=$(run_checkov ${tf_folders_with_changes})
+    ;;
+  *)
+    TFSEC_OUTPUT=$(run_tfsec ${INPUT_TERRAFORM_WORKING_DIR})
+    CHECKOV_OUTPUT=$(run_checkov ${INPUT_TERRAFORM_WORKING_DIR})
+    ;;
+esac
+
+# run_tfsec_org() {
+#   if [[ -n "$INPUT_TFSEC_EXCLUDE" ]]; then
+#     TFSEC_OUTPUT=$(/go/bin/tfsec ${terraform_working_dir} --no-colour -e "${INPUT_TFSEC_EXCLUDE}" ${INPUT_TFSEC_OUTPUT_FORMAT:+ -f "$INPUT_TFSEC_OUTPUT_FORMAT"} ${INPUT_TFSEC_OUTPUT_FILE:+ --out "$INPUT_TFSEC_OUTPUT_FILE"})
+#   else
+#     TFSEC_OUTPUT=$(/go/bin/tfsec ${terraform_working_dir} --no-colour ${INPUT_TFSEC_OUTPUT_FORMAT:+ -f "$INPUT_TFSEC_OUTPUT_FORMAT"} ${INPUT_TFSEC_OUTPUT_FILE:+ --out "$INPUT_TFSEC_OUTPUT_FILE"})
+#   fi
+#   TFSEC_EXITCODE=${?}
+# }
+
+# echo "Running Checkov"
+# CHECKOV_OUTPUT=$(checkov --quiet -d $terraform_working_dir)
+# CHECKOV_EXITCODE=$?
 
 # Exit code of 0 indicates success.
 if [ ${TFSEC_EXITCODE} -eq 0 ]; then
