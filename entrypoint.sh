@@ -16,7 +16,7 @@ echo "All TF folders"
 echo $all_tf_folders
 
 run_tfsec(){
-  for directory in $1
+  for directory in "${1}"
   do
     echo "Running TFSEC in ${directory}"
     terraform_working_dir="/github/workspace/${directory}"
@@ -30,7 +30,7 @@ run_tfsec(){
 }
 
 run_checkov(){
-  for directory in $1
+  for directory in "${1}"
   do
     echo "Running Checkov in ${directory}"
     terraform_working_dir="/github/workspace/${directory}"
@@ -43,17 +43,20 @@ run_checkov(){
 case ${INPUT_SCAN_TYPE} in
 
   full)
-    TFSEC_OUTPUT=$(run_tfsec ${all_tf_folders})
-    CHECKOV_OUTPUT=$(run_checkov ${all_tf_folders})
+    echo "Starting full scan"
+    TFSEC_OUTPUT=$(run_tfsec "${all_tf_folders}")
+    CHECKOV_OUTPUT=$(run_checkov "${all_tf_folders}")
     ;;
 
   changed)
-    TFSEC_OUTPUT=$(run_tfsec ${tf_folders_with_changes})
-    CHECKOV_OUTPUT=$(run_checkov ${tf_folders_with_changes})
+    echo "Starting scan of changed folders"
+    TFSEC_OUTPUT=$(run_tfsec "${tf_folders_with_changes}")
+    CHECKOV_OUTPUT=$(run_checkov "${tf_folders_with_changes}")
     ;;
   *)
-    TFSEC_OUTPUT=$(run_tfsec ${INPUT_TERRAFORM_WORKING_DIR})
-    CHECKOV_OUTPUT=$(run_checkov ${INPUT_TERRAFORM_WORKING_DIR})
+    echo "Starting single folder scan"
+    TFSEC_OUTPUT=$(run_tfsec "${INPUT_TERRAFORM_WORKING_DIR}")
+    CHECKOV_OUTPUT=$(run_checkov "${INPUT_TERRAFORM_WORKING_DIR}")
     ;;
 esac
 
