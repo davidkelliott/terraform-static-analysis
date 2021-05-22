@@ -5,7 +5,7 @@ inputs:
   scan_type:
     description: 'full = all tf folders, changed = tf changes, single = single folder'
     required: false
-    default: true
+    default: "single"
   tfsec_actions_comment:
     description: 'Whether or not to comment on pull requests.'
     required: false
