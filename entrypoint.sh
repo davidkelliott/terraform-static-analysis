@@ -35,7 +35,7 @@ run_checkov(){
     echo "Running Checkov in ${directory}"
     terraform_working_dir="/github/workspace/${directory}"
     
-    CHECKOV_OUTPUT=$(checkov --quiet -d $terraform_working_dir)
+    checkov --quiet -d $terraform_working_dir
     CHECKOV_EXITCODE=$?
   done
 }
