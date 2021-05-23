@@ -1,11 +1,11 @@
 # pinned version of the Alpine-tagged 'go' image
 #FROM golang:1.16-alpine
-FROM golang:1.16-stretch
+FROM golang:1.16-buster
 
 RUN apt-get update && apt-get install -y \
+  python3.7 \
   python3-pip \
   git \
-  golang-go \
   && rm -rf /var/lib/apt/lists/*
 # install requirements
 # RUN apk add --update --no-cache bash ca-certificates curl jq python3 py3-pip git
