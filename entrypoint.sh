@@ -52,7 +52,8 @@ run_checkov(){
     echo "Running Checkov in ${directory}"
     terraform_working_dir="/github/workspace/${directory}"
     if [[ -n "$INPUT_CHECKOV_EXCLUDE" ]]; then
-      checkov --quiet -d $terraform_working_dir --skip-check "${INPUT_CHECKOV_EXCLUDE}"
+      echo "Excluding the following checks: ${INPUT_CHECKOV_EXCLUDE}"
+      checkov --quiet -d $terraform_working_dir --skip-check ${INPUT_CHECKOV_EXCLUDE}
     else
       checkov --quiet -d $terraform_working_dir
     fi
