@@ -6,6 +6,8 @@ RUN apt-get update && apt-get install -y \
   python3.7 \
   python3-pip \
   git \
+  jq \
+  ca-certificate \
   && rm -rf /var/lib/apt/lists/*
 # install requirements
 # RUN apk add --update --no-cache bash ca-certificates curl jq python3 py3-pip git
