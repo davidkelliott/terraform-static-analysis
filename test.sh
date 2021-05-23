@@ -4,13 +4,14 @@ do
   echo "Running TFSEC in ${directory}"
 done
 
-testtrue=true
-echo "Test true:"
-echo $testtrue
-testfalse=false
-echo "Test false:"
-echo $testfalse
-testtrue=`[ $testtrue ] && [ $testfalse ]`
-echo "testtrue should be false:"
-echo $testtrue
+tfsec_exitcode=1
+checkov_exitcode=1
+
+if [ $tfsec_exitcode -gt 0 ] || [ $checkov_exitcode -gt 0 ];then
+  echo "above 0"
+  exit 1
+else
+  echo "equals 0"
+  exit 0
+fi
 

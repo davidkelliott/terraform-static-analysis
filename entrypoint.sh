@@ -25,12 +25,12 @@ echo "All TF folders"
 echo $all_tf_folders
 
 run_tfsec(){
-  echo "\nTFSEC will check the following folders:"
+  echo "TFSEC will check the following folders:"
   echo $1
   directories=($1)
   for directory in ${directories[@]}
   do
-    echo "\nRunning TFSEC in ${directory}"
+    echo "Running TFSEC in ${directory}"
     terraform_working_dir="/github/workspace/${directory}"
     if [[ -n "$INPUT_TFSEC_EXCLUDE" ]]; then
       /go/bin/tfsec ${terraform_working_dir} --no-colour -e "${INPUT_TFSEC_EXCLUDE}" ${INPUT_TFSEC_OUTPUT_FORMAT:+ -f "$INPUT_TFSEC_OUTPUT_FORMAT"} ${INPUT_TFSEC_OUTPUT_FILE:+ --out "$INPUT_TFSEC_OUTPUT_FILE"}
@@ -43,12 +43,12 @@ run_tfsec(){
 }
 
 run_checkov(){
-  echo "\nTFSEC will check the following folders:"
+  echo "TFSEC will check the following folders:"
   echo $1
   directories=($1)
   for directory in ${directories[@]}
   do
-    echo "\nRunning Checkov in ${directory}"
+    echo "Running Checkov in ${directory}"
     terraform_working_dir="/github/workspace/${directory}"
     
     checkov --quiet -d $terraform_working_dir
@@ -126,8 +126,13 @@ ${CHECKOV_OUTPUT}
   echo "${PAYLOAD}" | curl -s -S -H "Authorization: token ${GITHUB_TOKEN}" --header "Content-Type: application/json" --data @- "${URL}" > /dev/null
 fi
 
+echo $tfsec_exitcode
+echo $checkov_exitcode
+
 if [ $tfsec_exitcode -gt 0 ] || [ $checkov_exitcode -gt 0 ];then
+  echo "Exiting with error"  
   exit 1
 else
+  echo "Exiting with no error"  
   exit 0
 fi
