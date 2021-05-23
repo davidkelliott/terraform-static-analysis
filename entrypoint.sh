@@ -13,8 +13,8 @@ line_break() {
   echo
 }
 
-tfsec_success=true
-checkov_success=true
+declare -i tfsec_exitcode=0
+declare -i checkov_exitcode=0
 
 tf_folders_with_changes=`git diff --no-commit-id --name-only -r @^ | awk '{print $1}' | grep '.tf' | sed 's#/[^/]*$##' | uniq`
 echo "TF folders with changes"
@@ -37,8 +37,8 @@ run_tfsec(){
     else
       /go/bin/tfsec ${terraform_working_dir} --no-colour ${INPUT_TFSEC_OUTPUT_FORMAT:+ -f "$INPUT_TFSEC_OUTPUT_FORMAT"} ${INPUT_TFSEC_OUTPUT_FILE:+ --out "$INPUT_TFSEC_OUTPUT_FILE"}
     fi
-    tfsec_success= $tfsec_success && ${?}
-    echo "tfsec_success=${tfsec_success}"
+    tfsec_exitcode+=$?
+    echo "tfsec_exitcode=${tfsec_exitcode}"
   done
 }
 
@@ -52,8 +52,8 @@ run_checkov(){
     terraform_working_dir="/github/workspace/${directory}"
     
     checkov --quiet -d $terraform_working_dir
-    checkov_success= $checkov_success && ${?}
-    echo "checkov_success=${checkov_success}"
+    checkov_exitcode+=$?
+    echo "checkov_exitcode=${checkov_exitcode}"
   done
 }
 
@@ -80,20 +80,6 @@ case ${INPUT_SCAN_TYPE} in
     ;;
 esac
 
-# run_tfsec_org() {
-#   if [[ -n "$INPUT_TFSEC_EXCLUDE" ]]; then
-#     TFSEC_OUTPUT=$(/go/bin/tfsec ${terraform_working_dir} --no-colour -e "${INPUT_TFSEC_EXCLUDE}" ${INPUT_TFSEC_OUTPUT_FORMAT:+ -f "$INPUT_TFSEC_OUTPUT_FORMAT"} ${INPUT_TFSEC_OUTPUT_FILE:+ --out "$INPUT_TFSEC_OUTPUT_FILE"})
-#   else
-#     TFSEC_OUTPUT=$(/go/bin/tfsec ${terraform_working_dir} --no-colour ${INPUT_TFSEC_OUTPUT_FORMAT:+ -f "$INPUT_TFSEC_OUTPUT_FORMAT"} ${INPUT_TFSEC_OUTPUT_FILE:+ --out "$INPUT_TFSEC_OUTPUT_FILE"})
-#   fi
-#   TFSEC_EXITCODE=${?}
-# }
-
-# echo "Running Checkov"
-# CHECKOV_OUTPUT=$(checkov --quiet -d $terraform_working_dir)
-# CHECKOV_EXITCODE=$?
-
-# Exit code of 0 indicates success.
 if $tfsec_success; then
   TFSEC_STATUS="Success"
 else
@@ -117,7 +103,7 @@ else
   TFSEC_COMMENT=0
 fi
 
-if [ "${GITHUB_EVENT_NAME}" == "pull_request" ] && [ -n "${GITHUB_TOKEN}" ] && [ "${TFSEC_COMMENT}" == "1" ] && [ "${TFSEC_EXITCODE}" != "0" ]; then
+if [ "${GITHUB_EVENT_NAME}" == "pull_request" ] && [ -n "${GITHUB_TOKEN}" ] && [ "${TFSEC_COMMENT}" == "1" ] ; then
     COMMENT="#### \`TFSEC Scan\` ${TFSEC_STATUS}
 <details><summary>Show Output</summary>
 
@@ -140,8 +126,8 @@ ${CHECKOV_OUTPUT}
   echo "${PAYLOAD}" | curl -s -S -H "Authorization: token ${GITHUB_TOKEN}" --header "Content-Type: application/json" --data @- "${URL}" > /dev/null
 fi
 
-if $tfsec_success && $checkov_success;then
-  exit 0
-else
+if [ $tfsec_exitcode -gt 0 ] || [ $checkov_exitcode -gt 0 ];then
   exit 1
+else
+  exit 0
 fi
