@@ -74,23 +74,27 @@ case ${INPUT_SCAN_TYPE} in
     line_break
     echo "Starting scan of changed folders"
     TFSEC_OUTPUT=$(run_tfsec "${tf_folders_with_changes}")
+    tfsec_exitcode=$?
     CHECKOV_OUTPUT=$(run_checkov "${tf_folders_with_changes}")
+    checkov_exitcode=$?
     ;;
   *)
     line_break
     echo "Starting single folder scan"
     TFSEC_OUTPUT=$(run_tfsec "${INPUT_TERRAFORM_WORKING_DIR}")
+    tfsec_exitcode=$?
     CHECKOV_OUTPUT=$(run_checkov "${INPUT_TERRAFORM_WORKING_DIR}")
+    checkov_exitcode=$?
     ;;
 esac
 
-if $tfsec_success; then
+if [ $tfsec_exitcode -eq 0 ]; then
   TFSEC_STATUS="Success"
 else
   TFSEC_STATUS="Failed"
 fi
 
-if $checkov_success; then
+if [ $checkov_exitcode -eq 0 ]; then
   CHECKOV_STATUS="Success"
 else
   CHECKOV_STATUS="Failed"
