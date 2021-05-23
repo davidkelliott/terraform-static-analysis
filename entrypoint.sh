@@ -40,10 +40,11 @@ run_tfsec(){
     tfsec_exitcode+=$?
     echo "tfsec_exitcode=${tfsec_exitcode}"
   done
+  return $tfsec_exitcode
 }
 
 run_checkov(){
-  echo "TFSEC will check the following folders:"
+  echo "Checkov will check the following folders:"
   echo $1
   directories=($1)
   for directory in ${directories[@]}
@@ -55,6 +56,7 @@ run_checkov(){
     checkov_exitcode+=$?
     echo "checkov_exitcode=${checkov_exitcode}"
   done
+  return $checkov_exitcode
 }
 
 case ${INPUT_SCAN_TYPE} in
@@ -63,7 +65,9 @@ case ${INPUT_SCAN_TYPE} in
     line_break
     echo "Starting full scan"
     TFSEC_OUTPUT=$(run_tfsec "${all_tf_folders}")
+    tfsec_exitcode=$?
     CHECKOV_OUTPUT=$(run_checkov "${all_tf_folders}")
+    checkov_exitcode=$?
     ;;
 
   changed)
