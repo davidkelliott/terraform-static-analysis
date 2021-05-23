@@ -51,8 +51,11 @@ run_checkov(){
   do
     echo "Running Checkov in ${directory}"
     terraform_working_dir="/github/workspace/${directory}"
-    
-    checkov --quiet -d $terraform_working_dir
+    if [[ -n "$INPUT_CHECKOV_EXCLUDE" ]]; then
+      checkov --quiet -d $terraform_working_dir --skip-check "${INPUT_CHECKOV_EXCLUDE}"
+    else
+      checkov --quiet -d $terraform_working_dir
+    fi
     checkov_exitcode+=$?
     echo "checkov_exitcode=${checkov_exitcode}"
   done
@@ -105,7 +108,7 @@ echo "${TFSEC_OUTPUT}"
 echo "${CHECKOV_OUTPUT}"
 
 # Comment on the pull request if necessary.
-if [ "${INPUT_TFSEC_ACTIONS_COMMENT}" == "1" ] || [ "${INPUT_TFSEC_ACTIONS_COMMENT}" == "true" ]; then
+if [ "${INPUT_COMMENT_ON_PR}" == "1" ] || [ "${INPUT_COMMENT_ON_PR}" == "true" ]; then
   TFSEC_COMMENT=1
 else
   TFSEC_COMMENT=0
