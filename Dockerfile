@@ -16,4 +16,4 @@ RUN pip3 install checkov
 
 COPY entrypoint.sh /entrypoint.sh
 # set the default entrypoint -- when this container is run, use this command
-ENTRYPOINT ["bash", "/entrypoint.sh"]
+ENTRYPOINT ["/entrypoint.sh"]

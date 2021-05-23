@@ -13,6 +13,9 @@ line_break() {
   echo
 }
 
+tfsec_success=true
+checkov_success=true
+
 tf_folders_with_changes=`git diff --no-commit-id --name-only -r @^ | awk '{print $1}' | grep '.tf' | sed 's#/[^/]*$##' | uniq`
 echo "TF folders with changes"
 echo $tf_folders_with_changes
@@ -22,35 +25,35 @@ echo "All TF folders"
 echo $all_tf_folders
 
 run_tfsec(){
-  echo "TFSEC will check the following folders:"
+  echo "\nTFSEC will check the following folders:"
   echo $1
-  arr=($1)
-  for directory in ${arr[@]}
+  directories=($1)
+  for directory in ${directories[@]}
   do
-    echo "Running TFSEC in ${directory}"
+    echo "\nRunning TFSEC in ${directory}"
     terraform_working_dir="/github/workspace/${directory}"
     if [[ -n "$INPUT_TFSEC_EXCLUDE" ]]; then
       /go/bin/tfsec ${terraform_working_dir} --no-colour -e "${INPUT_TFSEC_EXCLUDE}" ${INPUT_TFSEC_OUTPUT_FORMAT:+ -f "$INPUT_TFSEC_OUTPUT_FORMAT"} ${INPUT_TFSEC_OUTPUT_FILE:+ --out "$INPUT_TFSEC_OUTPUT_FILE"}
     else
       /go/bin/tfsec ${terraform_working_dir} --no-colour ${INPUT_TFSEC_OUTPUT_FORMAT:+ -f "$INPUT_TFSEC_OUTPUT_FORMAT"} ${INPUT_TFSEC_OUTPUT_FILE:+ --out "$INPUT_TFSEC_OUTPUT_FILE"}
     fi
-    TFSEC_EXITCODE=${?}
-    echo "TFSEC_EXITCODE=${TFSEC_EXITCODE}"
+    tfsec_success= $tfsec_success && ${?}
+    echo "tfsec_success=${tfsec_success}"
   done
 }
 
 run_checkov(){
-  echo "TFSEC will check the following folders:"
+  echo "\nTFSEC will check the following folders:"
   echo $1
-  arr=($1)
-  for directory in ${arr[@]}
+  directories=($1)
+  for directory in ${directories[@]}
   do
-    echo "Running Checkov in ${directory}"
+    echo "\nRunning Checkov in ${directory}"
     terraform_working_dir="/github/workspace/${directory}"
     
     checkov --quiet -d $terraform_working_dir
-    CHECKOV_EXITCODE=$?
-    echo "CHECKOV_EXITCODE=${CHECKOV_EXITCODE}"
+    checkov_success= $checkov_success && ${?}
+    echo "checkov_success=${checkov_success}"
   done
 }
 
@@ -91,13 +94,13 @@ esac
 # CHECKOV_EXITCODE=$?
 
 # Exit code of 0 indicates success.
-if [ ${TFSEC_EXITCODE} -eq 0 ]; then
+if $tfsec_success; then
   TFSEC_STATUS="Success"
 else
   TFSEC_STATUS="Failed"
 fi
 
-if [ ${CHECKOV_EXITCODE} -eq 0 ]; then
+if $checkov_success; then
   CHECKOV_STATUS="Success"
 else
   CHECKOV_STATUS="Failed"
@@ -137,8 +140,8 @@ ${CHECKOV_OUTPUT}
   echo "${PAYLOAD}" | curl -s -S -H "Authorization: token ${GITHUB_TOKEN}" --header "Content-Type: application/json" --data @- "${URL}" > /dev/null
 fi
 
-if [ "${TFSEC_EXITCODE}" != "0" ] || [  "${CHECKOV_EXITCODE}" != "0" ];then
-  exit 1
-else
+if $tfsec_success && $checkov_success;then
   exit 0
+else
+  exit 1
 fi
