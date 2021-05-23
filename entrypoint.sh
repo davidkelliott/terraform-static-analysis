@@ -1,6 +1,5 @@
 #!/bin/bash
-cat /etc/shells
-echo $SHELL
+
 # grab tfsec from GitHub (taken from README.md)
 if [[ -n "$INPUT_TFSEC_VERSION" ]]; then
   env GO111MODULE=on go install github.com/tfsec/tfsec/cmd/tfsec@"${INPUT_TFSEC_VERSION}"
