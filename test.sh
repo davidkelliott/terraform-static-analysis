@@ -4,8 +4,16 @@ do
   echo "Running TFSEC in ${directory}"
 done
 
-tfsec_exitcode=1
-checkov_exitcode=1
+add() {
+  tfsec_exitcode+=1
+  return $tfsec_exitcode
+}
+
+
+add
+echo $?
+echo "tfsec_exitcode: $tfsec_exitcode"
+echo "checkov_exitcode: $checkov_exitcode"
 
 if [ $tfsec_exitcode -gt 0 ] || [ $checkov_exitcode -gt 0 ];then
   echo "above 0"
