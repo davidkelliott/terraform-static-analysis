@@ -39,7 +39,6 @@ run_tfsec(){
     fi
     tfsec_exitcode+=$?
     echo "tfsec_exitcode=${tfsec_exitcode}"
-    return $tfsec_exitcode
   done
 }
 
@@ -55,7 +54,6 @@ run_checkov(){
     checkov --quiet -d $terraform_working_dir
     checkov_exitcode+=$?
     echo "checkov_exitcode=${checkov_exitcode}"
-    return $checkov_exitcode
   done
 }
 
@@ -65,26 +63,20 @@ case ${INPUT_SCAN_TYPE} in
     line_break
     echo "Starting full scan"
     TFSEC_OUTPUT=$(run_tfsec "${all_tf_folders}")
-    tfsec_exitcode=$?
     CHECKOV_OUTPUT=$(run_checkov "${all_tf_folders}")
-    checkov_exitcode=$?
     ;;
 
   changed)
     line_break
     echo "Starting scan of changed folders"
     TFSEC_OUTPUT=$(run_tfsec "${tf_folders_with_changes}")
-    tfsec_exitcode=$?
     CHECKOV_OUTPUT=$(run_checkov "${tf_folders_with_changes}")
-    checkov_exitcode=$?
     ;;
   *)
     line_break
     echo "Starting single folder scan"
     TFSEC_OUTPUT=$(run_tfsec "${INPUT_TERRAFORM_WORKING_DIR}")
-    tfsec_exitcode=$?
     CHECKOV_OUTPUT=$(run_checkov "${INPUT_TERRAFORM_WORKING_DIR}")
-    checkov_exitcode=$?
     ;;
 esac
 
