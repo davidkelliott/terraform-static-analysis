@@ -28,19 +28,23 @@ declare -i tfsec_exitcode=0
 declare -i checkov_exitcode=0
 
 tf_folders_with_changes=`git diff --no-commit-id --name-only -r @^ | awk '{print $1}' | grep '.tf' | sed 's#/[^/]*$##' | uniq`
+echo
 echo "TF folders with changes"
 echo $tf_folders_with_changes
 
 all_tf_folders=`find . -type f -name '*.tf' | sed 's#/[^/]*$##' | sed 's/.\///'| sort | uniq`
+echo
 echo "All TF folders"
 echo $all_tf_folders
 
 run_tfsec(){
+  line_break
   echo "TFSEC will check the following folders:"
   echo $1
   directories=($1)
   for directory in ${directories[@]}
   do
+    line_break
     echo "Running TFSEC in ${directory}"
     terraform_working_dir="/github/workspace/${directory}"
     if [[ -n "$INPUT_TFSEC_EXCLUDE" ]]; then
@@ -55,11 +59,13 @@ run_tfsec(){
 }
 
 run_checkov(){
+  line_break
   echo "Checkov will check the following folders:"
   echo $1
   directories=($1)
   for directory in ${directories[@]}
   do
+    line_break
     echo "Running Checkov in ${directory}"
     terraform_working_dir="/github/workspace/${directory}"
     if [[ -n "$INPUT_CHECKOV_EXCLUDE" ]]; then
@@ -149,11 +155,11 @@ ${CHECKOV_OUTPUT}
   echo "${PAYLOAD}" | curl -s -S -H "Authorization: token ${GITHUB_TOKEN}" --header "Content-Type: application/json" --data @- "${URL}" > /dev/null
 fi
 
-echo $tfsec_exitcode
-echo $checkov_exitcode
+echo "Total of TFSEC exit codes: $tfsec_exitcode"
+echo "Total of TFSEC exit codes: $checkov_exitcode"
 
 if [ $tfsec_exitcode -gt 0 ] || [ $checkov_exitcode -gt 0 ];then
-  echo "Exiting with error"  
+  echo "Exiting with error(s)"  
   exit 1
 else
   echo "Exiting with no error"  
