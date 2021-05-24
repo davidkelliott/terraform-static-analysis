@@ -1,15 +1,13 @@
-# Ministry of Justice Template Repository
+# Terraform Static Analysis Action
 
-Use this template to [create a repository] with the default initial files for a Ministry of Justice Github repository, including:
+This action combines both [TFSEC](https://github.com/tfsec/tfsec) and [Checkov](https://github.com/bridgecrewio/checkov) into one action, loosely based on the [TFSEC action](https://github.com/triat/terraform-security-scan) and [Checkov actions](https://github.com/bridgecrewio/checkov-action) here.
 
-* The correct LICENSE
-* Github actions
-* .gitignore file
+The main reason for combining these is to add logic to perform different scan options:
 
-Once you have created your repository, please:
+Full scan - scan all folders with `*.tf` files in a repository.
 
-* Edit the copy of this README.md file to document your project
-* Grant permissions to the appropriate MoJ teams
-* Setup branch protection
+Changes only - scan only folders with `*.tf` files that have had changes since the last commit.
 
-[create a repository]: https://github.com/ministryofjustice/template-repository/generate
+Single folder - standard scan of a given folder.
+
+TODO instructions.
