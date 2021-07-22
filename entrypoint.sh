@@ -47,7 +47,6 @@ run_tfsec(){
     line_break
     echo "Running TFSEC in ${directory}"
     terraform_working_dir="/github/workspace/${directory}"
-    terraform -chdir="${terraform_working_dir}" init -input=false -no-color
     if [[ -n "$INPUT_TFSEC_EXCLUDE" ]]; then
       /go/bin/tfsec ${terraform_working_dir} --no-colour -e "${INPUT_TFSEC_EXCLUDE}" ${INPUT_TFSEC_OUTPUT_FORMAT:+ -f "$INPUT_TFSEC_OUTPUT_FORMAT"} ${INPUT_TFSEC_OUTPUT_FILE:+ --out "$INPUT_TFSEC_OUTPUT_FILE"}
     else
