@@ -157,7 +157,7 @@ ${CHECKOV_OUTPUT}
 fi
 
 echo "Total of TFSEC exit codes: $tfsec_exitcode"
-echo "Total of TFSEC exit codes: $checkov_exitcode"
+echo "Total of Checkov exit codes: $checkov_exitcode"
 
 if [ $tfsec_exitcode -gt 0 ] || [ $checkov_exitcode -gt 0 ];then
   echo "Exiting with error(s)"  
