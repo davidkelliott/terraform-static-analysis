@@ -123,6 +123,7 @@ else
 fi
 
 # Print output.
+line_break
 echo "${TFSEC_OUTPUT}"
 echo "${CHECKOV_OUTPUT}"
 
