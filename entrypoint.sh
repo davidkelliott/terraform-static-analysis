@@ -27,6 +27,8 @@ line_break() {
 
 declare -i tfsec_exitcode=0
 declare -i checkov_exitcode=0
+declare -i tflint_exitcode=0
+declare -i tfinit_exitcode=0
 
 # Identify which Terraform folders have changes and need scanning
 tf_folders_with_changes=`git diff --no-commit-id --name-only -r @^ | awk '{print $1}' | grep '.tf' | sed 's#/[^/]*$##' | uniq`
@@ -40,6 +42,23 @@ echo
 echo "All TF folders"
 echo $all_tf_folders
 
+run_terraform_init(){
+  line_break
+  echo "Running Terraform init in:"
+  echo $1
+  directories=($1)
+  for directory in ${directories[@]}
+  do
+    line_break
+    echo "Running Terraform init in ${directory}"
+    terraform_working_dir="/github/workspace/${directory}"
+    terraform -chdir="${terraform_working_dir}" init -input=false -no-color
+    tfinit_exitcode+=$?
+    echo "tfinit_exitcode=${tfinit_exitcode}"
+  done
+  return $tfinit_exitcode
+}
+
 run_tfsec(){
   line_break
   echo "TFSEC will check the following folders:"
@@ -50,7 +69,6 @@ run_tfsec(){
     line_break
     echo "Running TFSEC in ${directory}"
     terraform_working_dir="/github/workspace/${directory}"
-    terraform -chdir="${terraform_working_dir}" init -input=false -no-color
     if [[ -n "$INPUT_TFSEC_EXCLUDE" ]]; then
       echo "Excluding the following checks: ${INPUT_TFSEC_EXCLUDE}"
       /go/bin/tfsec ${terraform_working_dir} --no-colour -e "${INPUT_TFSEC_EXCLUDE}" ${INPUT_TFSEC_OUTPUT_FORMAT:+ -f "$INPUT_TFSEC_OUTPUT_FORMAT"} ${INPUT_TFSEC_OUTPUT_FILE:+ --out "$INPUT_TFSEC_OUTPUT_FILE"}
@@ -112,27 +130,38 @@ case ${INPUT_SCAN_TYPE} in
   full)
     line_break
     echo "Starting full scan"
+    run_terraform_init "${all_tf_folders}"
+    wait
     TFSEC_OUTPUT=$(run_tfsec "${all_tf_folders}")
     tfsec_exitcode=$?
+    wait
     CHECKOV_OUTPUT=$(run_checkov "${all_tf_folders}")
     checkov_exitcode=$?
+    wait
     TFLINT_OUTPUT=$(run_tflint "${all_tf_folders}")
     tflint_exitcode=$?
+    wait
     ;;
 
   changed)
     line_break
     echo "Starting scan of changed folders"
+    run_terraform_init "${tf_folders_with_changes}"
+    wait
     TFSEC_OUTPUT=$(run_tfsec "${tf_folders_with_changes}")
     tfsec_exitcode=$?
+    wait
     CHECKOV_OUTPUT=$(run_checkov "${tf_folders_with_changes}")
     checkov_exitcode=$?
+    wait
     TFLINT_OUTPUT=$(run_tflint "${tf_folders_with_changes}")
     tflint_exitcode=$?
+    wait
     ;;
   *)
     line_break
     echo "Starting single folder scan"
+    run_terraform_init "${INPUT_TERRAFORM_WORKING_DIR}"
     TFSEC_OUTPUT=$(run_tfsec "${INPUT_TERRAFORM_WORKING_DIR}")
     tfsec_exitcode=$?
     CHECKOV_OUTPUT=$(run_checkov "${INPUT_TERRAFORM_WORKING_DIR}")
@@ -206,11 +235,12 @@ ${TFLINT_OUTPUT}
   echo "${PAYLOAD}" | curl -s -S -H "Authorization: token ${GITHUB_TOKEN}" --header "Content-Type: application/json" --data @- "${URL}" > /dev/null
 fi
 
+echo "Total of Terraform init exit codes: $tfinit_exitcode"
 echo "Total of TFSEC exit codes: $tfsec_exitcode"
 echo "Total of Checkov exit codes: $checkov_exitcode"
 echo "Total of tflint exit codes: $tflint_exitcode"
 
-if [ $tfsec_exitcode -gt 0 ] || [ $checkov_exitcode -gt 0 ] || [ $tflint_exitcode -gt 0 ];then
+if [ $tfsec_exitcode -gt 0 ] || [ $checkov_exitcode -gt 0 ] || [ $tflint_exitcode -gt 0 ] || [ $tfinit_exitcode -gt 0 ];then
   echo "Exiting with error(s)"  
   exit 1
 else
