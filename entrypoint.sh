@@ -10,6 +10,7 @@ echo "INPUT_TFSEC_VERSION: $INPUT_TFSEC_VERSION"
 echo "INPUT_TFSEC_OUTPUT_FORMAT: $INPUT_TFSEC_OUTPUT_FORMAT"
 echo "INPUT_TFSEC_OUTPUT_FILE: $INPUT_TFSEC_OUTPUT_FILE"
 echo "INPUT_CHECKOV_EXCLUDE: $INPUT_CHECKOV_EXCLUDE"
+echo "INPUT_TFLINT_EXCLUDE: $INPUT_TFLINT_EXCLUDE"
 echo
 # install tfsec from GitHub (taken from README.md)
 if [[ -n "$INPUT_TFSEC_VERSION" ]]; then
@@ -51,6 +52,7 @@ run_tfsec(){
     terraform_working_dir="/github/workspace/${directory}"
     terraform -chdir="${terraform_working_dir}" init -input=false -no-color
     if [[ -n "$INPUT_TFSEC_EXCLUDE" ]]; then
+      echo "Excluding the following checks: ${INPUT_TFSEC_EXCLUDE}"
       /go/bin/tfsec ${terraform_working_dir} --no-colour -e "${INPUT_TFSEC_EXCLUDE}" ${INPUT_TFSEC_OUTPUT_FORMAT:+ -f "$INPUT_TFSEC_OUTPUT_FORMAT"} ${INPUT_TFSEC_OUTPUT_FILE:+ --out "$INPUT_TFSEC_OUTPUT_FILE"}
     else
       /go/bin/tfsec ${terraform_working_dir} --no-colour ${INPUT_TFSEC_OUTPUT_FORMAT:+ -f "$INPUT_TFSEC_OUTPUT_FORMAT"} ${INPUT_TFSEC_OUTPUT_FILE:+ --out "$INPUT_TFSEC_OUTPUT_FILE"}
@@ -83,6 +85,28 @@ run_checkov(){
   return $checkov_exitcode
 }
 
+run_tflint(){
+  line_break
+  echo "tflint will check the following folders:"
+  echo $1
+  directories=($1)
+  for directory in ${directories[@]}
+  do
+    line_break
+    echo "Running tflint in ${directory}"
+    terraform_working_dir="/github/workspace/${directory}"
+    if [[ -n "$INPUT_TFLINT_EXCLUDE" ]]; then
+      echo "Excluding the following checks: ${INPUT_TFLINT_EXCLUDE}"
+      tflint --disable-rule="${INPUT_TFLINT_EXCLUDE}" ${terraform_working_dir}
+    else
+      tflint ${terraform_working_dir}
+    fi
+    tflint_exitcode+=$?
+    echo "tflint_exitcode=${tflint_exitcode}"
+  done
+  return $tflint_exitcode
+}
+
 case ${INPUT_SCAN_TYPE} in
 
   full)
@@ -92,6 +116,8 @@ case ${INPUT_SCAN_TYPE} in
     tfsec_exitcode=$?
     CHECKOV_OUTPUT=$(run_checkov "${all_tf_folders}")
     checkov_exitcode=$?
+    TFLINT_OUTPUT=$(run_tflint "${all_tf_folders}")
+    tflint_exitcode=$?
     ;;
 
   changed)
@@ -101,6 +127,8 @@ case ${INPUT_SCAN_TYPE} in
     tfsec_exitcode=$?
     CHECKOV_OUTPUT=$(run_checkov "${tf_folders_with_changes}")
     checkov_exitcode=$?
+    TFLINT_OUTPUT=$(run_tflint "${tf_folders_with_changes}")
+    tflint_exitcode=$?
     ;;
   *)
     line_break
@@ -109,6 +137,8 @@ case ${INPUT_SCAN_TYPE} in
     tfsec_exitcode=$?
     CHECKOV_OUTPUT=$(run_checkov "${INPUT_TERRAFORM_WORKING_DIR}")
     checkov_exitcode=$?
+    TFLINT_OUTPUT=$(run_tflint "${INPUT_TERRAFORM_WORKING_DIR}")
+    tflint_exitcode=$?
     ;;
 esac
 
@@ -124,19 +154,26 @@ else
   CHECKOV_STATUS="Failed"
 fi
 
+if [ $tflint_exitcode -eq 0 ]; then
+  TFLINT_STATUS="Success"
+else
+  TFLINT_STATUS="Failed"
+fi
+
 # Print output.
 line_break
 echo "${TFSEC_OUTPUT}"
 echo "${CHECKOV_OUTPUT}"
+echo "${TFLINT_OUTPUT}"
 
 # Comment on the pull request if necessary.
 if [ "${INPUT_COMMENT_ON_PR}" == "1" ] || [ "${INPUT_COMMENT_ON_PR}" == "true" ]; then
-  TFSEC_COMMENT=1
+  COMMENT=1
 else
-  TFSEC_COMMENT=0
+  COMMENT=0
 fi
 
-if [ "${GITHUB_EVENT_NAME}" == "pull_request" ] && [ -n "${GITHUB_TOKEN}" ] && [ "${TFSEC_COMMENT}" == "1" ] ; then
+if [ "${GITHUB_EVENT_NAME}" == "pull_request" ] && [ -n "${GITHUB_TOKEN}" ] && [ "${COMMENT}" == "1" ] ; then
     COMMENT="#### \`TFSEC Scan\` ${TFSEC_STATUS}
 <details><summary>Show Output</summary>
 
@@ -153,7 +190,17 @@ ${TFSEC_OUTPUT}
 ${CHECKOV_OUTPUT}
 \`\`\`
 
+</details>
+
+#### \`CTFLint Scan\` ${TFLINT_STATUS}
+<details><summary>Show Output</summary>
+
+\`\`\`hcl
+${TFLINT_OUTPUT}
+\`\`\`
+
 </details>"
+
   PAYLOAD=$(echo "${COMMENT}" | jq -R --slurp '{body: .}')
   URL=$(jq -r .pull_request.comments_url "${GITHUB_EVENT_PATH}")
   echo "${PAYLOAD}" | curl -s -S -H "Authorization: token ${GITHUB_TOKEN}" --header "Content-Type: application/json" --data @- "${URL}" > /dev/null
@@ -161,8 +208,9 @@ fi
 
 echo "Total of TFSEC exit codes: $tfsec_exitcode"
 echo "Total of Checkov exit codes: $checkov_exitcode"
+echo "Total of tflint exit codes: $tflint_exitcode"
 
-if [ $tfsec_exitcode -gt 0 ] || [ $checkov_exitcode -gt 0 ];then
+if [ $tfsec_exitcode -gt 0 ] || [ $checkov_exitcode -gt 0 ] || [ $tflint_exitcode -gt 0 ];then
   echo "Exiting with error(s)"  
   exit 1
 else
