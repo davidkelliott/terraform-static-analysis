@@ -11,7 +11,7 @@ echo "INPUT_TFSEC_OUTPUT_FORMAT: $INPUT_TFSEC_OUTPUT_FORMAT"
 echo "INPUT_TFSEC_OUTPUT_FILE: $INPUT_TFSEC_OUTPUT_FILE"
 echo "INPUT_CHECKOV_EXCLUDE: $INPUT_CHECKOV_EXCLUDE"
 echo
-# grab tfsec from GitHub (taken from README.md)
+# install tfsec from GitHub (taken from README.md)
 if [[ -n "$INPUT_TFSEC_VERSION" ]]; then
   env GO111MODULE=on go install github.com/aquasecurity/tfsec/cmd/tfsec@"${INPUT_TFSEC_VERSION}"
 else
@@ -27,11 +27,13 @@ line_break() {
 declare -i tfsec_exitcode=0
 declare -i checkov_exitcode=0
 
+# Identify which Terraform folders have changes and need scanning
 tf_folders_with_changes=`git diff --no-commit-id --name-only -r @^ | awk '{print $1}' | grep '.tf' | sed 's#/[^/]*$##' | uniq`
 echo
 echo "TF folders with changes"
 echo $tf_folders_with_changes
 
+# Get a list of all terraform folders in the repo
 all_tf_folders=`find . -type f -name '*.tf' | sed 's#/[^/]*$##' | sed 's/.\///'| sort | uniq`
 echo
 echo "All TF folders"
