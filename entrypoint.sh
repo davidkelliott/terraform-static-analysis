@@ -49,12 +49,15 @@ run_terraform_init(){
   directories=($1)
   for directory in ${directories[@]}
   do
-    line_break
-    echo "Running Terraform init in ${directory}"
-    terraform_working_dir="/github/workspace/${directory}"
-    terraform -chdir="${terraform_working_dir}" init -input=false -no-color
-    tfinit_exitcode+=$?
-    echo "tfinit_exitcode=${tfinit_exitcode}"
+    if [[ "${directory}" != *"templates"* ]]
+    then
+      line_break
+      echo "Running Terraform init in ${directory}"
+      terraform_working_dir="/github/workspace/${directory}"
+      TF_IN_AUTOMATION=true terraform -chdir="${terraform_working_dir}" init -input=false >/dev/null
+      tfinit_exitcode+=$?
+      echo "tfinit_exitcode=${tfinit_exitcode}"
+    fi
   done
   return $tfinit_exitcode
 }
@@ -235,6 +238,7 @@ ${TFLINT_OUTPUT}
   echo "${PAYLOAD}" | curl -s -S -H "Authorization: token ${GITHUB_TOKEN}" --header "Content-Type: application/json" --data @- "${URL}" > /dev/null
 fi
 
+line_break
 echo "Total of Terraform init exit codes: $tfinit_exitcode"
 echo "Total of TFSEC exit codes: $tfsec_exitcode"
 echo "Total of Checkov exit codes: $checkov_exitcode"
