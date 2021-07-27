@@ -10,4 +10,22 @@ Changes only - scan only folders with `*.tf` files that have had changes since t
 
 Single folder - standard scan of a given folder.
 
-TODO instructions.
+## Example
+
+```
+jobs:
+  terraform-static-analysis:
+    name: Terraform Static Analysis
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2.3.4
+      with:
+        fetch-depth: 0
+    - name: Run Analysis
+      uses: davidkelliott/terraform-static-analysis@main
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        scan_type: changed
+```
