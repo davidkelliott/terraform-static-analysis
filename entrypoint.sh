@@ -76,9 +76,9 @@ run_checkov(){
     terraform_working_dir="/github/workspace/${directory}"
     if [[ -n "$INPUT_CHECKOV_EXCLUDE" ]]; then
       echo "Excluding the following checks: ${INPUT_CHECKOV_EXCLUDE}"
-      checkov --quiet -d $terraform_working_dir --skip-check ${INPUT_CHECKOV_EXCLUDE}
+      checkov --quiet -d $terraform_working_dir --skip-check ${INPUT_CHECKOV_EXCLUDE} 2>&1
     else
-      checkov --quiet -d $terraform_working_dir
+      checkov --quiet -d $terraform_working_dir 2>&1
     fi
     checkov_exitcode+=$?
     echo "checkov_exitcode=${checkov_exitcode}"
@@ -98,9 +98,9 @@ run_tflint(){
     terraform_working_dir="/github/workspace/${directory}"
     if [[ -n "$INPUT_TFLINT_EXCLUDE" ]]; then
       echo "Excluding the following checks: ${INPUT_TFLINT_EXCLUDE}"
-      tflint --disable-rule="${INPUT_TFLINT_EXCLUDE}" ${terraform_working_dir}
+      tflint --disable-rule="${INPUT_TFLINT_EXCLUDE}" ${terraform_working_dir} 2>&1
     else
-      tflint ${terraform_working_dir}
+      tflint ${terraform_working_dir} 2>&1
     fi
     tflint_exitcode+=$?
     echo "tflint_exitcode=${tflint_exitcode}"
