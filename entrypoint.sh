@@ -104,6 +104,8 @@ run_tflint(){
       else
         tflint ${terraform_working_dir} 2>&1
       fi
+    else 
+      echo "Skipping folder as path name contains *templates*"
     fi
     tflint_exitcode+=$?
     echo "tflint_exitcode=${tflint_exitcode}"
