@@ -42,26 +42,6 @@ echo
 echo "All TF folders"
 echo $all_tf_folders
 
-run_terraform_init(){
-  line_break
-  echo "Running Terraform init in:"
-  echo $1
-  directories=($1)
-  for directory in ${directories[@]}
-  do
-    if [[ "${directory}" != *"templates"* ]]
-    then
-      line_break
-      echo "Running Terraform init in ${directory}"
-      terraform_working_dir="/github/workspace/${directory}"
-      TF_IN_AUTOMATION=true terraform -chdir="${terraform_working_dir}" init -input=false >/dev/null
-      tfinit_exitcode+=$?
-      echo "tfinit_exitcode=${tfinit_exitcode}"
-    fi
-  done
-  return $tfinit_exitcode
-}
-
 run_tfsec(){
   line_break
   echo "TFSEC will check the following folders:"
@@ -133,8 +113,6 @@ case ${INPUT_SCAN_TYPE} in
   full)
     line_break
     echo "Starting full scan"
-    run_terraform_init "${all_tf_folders}"
-    wait
     TFSEC_OUTPUT=$(run_tfsec "${all_tf_folders}")
     tfsec_exitcode=$?
     wait
@@ -149,8 +127,6 @@ case ${INPUT_SCAN_TYPE} in
   changed)
     line_break
     echo "Starting scan of changed folders"
-    run_terraform_init "${tf_folders_with_changes}"
-    wait
     TFSEC_OUTPUT=$(run_tfsec "${tf_folders_with_changes}")
     tfsec_exitcode=$?
     wait
@@ -164,13 +140,15 @@ case ${INPUT_SCAN_TYPE} in
   *)
     line_break
     echo "Starting single folder scan"
-    run_terraform_init "${INPUT_TERRAFORM_WORKING_DIR}"
     TFSEC_OUTPUT=$(run_tfsec "${INPUT_TERRAFORM_WORKING_DIR}")
     tfsec_exitcode=$?
+    wait
     CHECKOV_OUTPUT=$(run_checkov "${INPUT_TERRAFORM_WORKING_DIR}")
     checkov_exitcode=$?
+    wait
     TFLINT_OUTPUT=$(run_tflint "${INPUT_TERRAFORM_WORKING_DIR}")
     tflint_exitcode=$?
+    wait
     ;;
 esac
 
@@ -239,12 +217,11 @@ ${TFLINT_OUTPUT}
 fi
 
 line_break
-echo "Total of Terraform init exit codes: $tfinit_exitcode"
 echo "Total of TFSEC exit codes: $tfsec_exitcode"
 echo "Total of Checkov exit codes: $checkov_exitcode"
 echo "Total of tflint exit codes: $tflint_exitcode"
 
-if [ $tfsec_exitcode -gt 0 ] || [ $checkov_exitcode -gt 0 ] || [ $tflint_exitcode -gt 0 ] || [ $tfinit_exitcode -gt 0 ];then
+if [ $tfsec_exitcode -gt 0 ] || [ $checkov_exitcode -gt 0 ] || [ $tflint_exitcode -gt 0 ];then
   echo "Exiting with error(s)"  
   exit 1
 else
