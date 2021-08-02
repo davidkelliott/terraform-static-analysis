@@ -96,11 +96,14 @@ run_tflint(){
     line_break
     echo "Running tflint in ${directory}"
     terraform_working_dir="/github/workspace/${directory}"
-    if [[ -n "$INPUT_TFLINT_EXCLUDE" ]]; then
-      echo "Excluding the following checks: ${INPUT_TFLINT_EXCLUDE}"
-      tflint --disable-rule="${INPUT_TFLINT_EXCLUDE}" ${terraform_working_dir} 2>&1
-    else
-      tflint ${terraform_working_dir} 2>&1
+    if [[ "${directory}" != *"templates"* ]]
+    then
+      if [[ -n "$INPUT_TFLINT_EXCLUDE" ]]; then
+        echo "Excluding the following checks: ${INPUT_TFLINT_EXCLUDE}"
+        tflint --disable-rule="${INPUT_TFLINT_EXCLUDE}" ${terraform_working_dir} 2>&1
+      else
+        tflint ${terraform_working_dir} 2>&1
+      fi
     fi
     tflint_exitcode+=$?
     echo "tflint_exitcode=${tflint_exitcode}"
