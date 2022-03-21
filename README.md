@@ -1,6 +1,7 @@
 # Terraform Static Analysis Action
 
-I have moved this Action to here now - https://github.com/ministryofjustice/github-actions/tree/main/terraform-static-analysis
+*I have moved this Action to here now - https://github.com/ministryofjustice/github-actions/tree/main/terraform-static-analysis
+
 
 This action combines [TFSEC](https://github.com/tfsec/tfsec), [Checkov](https://github.com/bridgecrewio/checkov) and [tflint](https://github.com/terraform-linters/tflint) into one action, loosely based on the [TFSEC action](https://github.com/triat/terraform-security-scan) and [Checkov actions](https://github.com/bridgecrewio/checkov-action) here.
 
